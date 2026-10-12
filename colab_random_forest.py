@@ -1,5 +1,5 @@
 from google.colab import files
-import io, json, zipfile
+import io, json, zipfile, re
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -8,7 +8,13 @@ from sklearn.metrics import classification_report, ConfusionMatrixDisplay, accur
 import joblib
 
 # Upload ONLY clean.csv, clutter.csv and weak_signal.csv (no backups).
-uploaded = files.upload()
+raw_uploaded = files.upload()
+uploaded = {}
+for filename, content in raw_uploaded.items():
+    canonical = re.sub(r" \(\d+\)(?=\.csv$)", "", filename, flags=re.IGNORECASE).lower()
+    if canonical in uploaded:
+        raise ValueError('Select only one copy of each class CSV: ' + canonical)
+    uploaded[canonical] = content
 CLASSES = ['clean', 'clutter', 'weak_signal']
 FEATURES = ['valid_fraction', 'distance_mean', 'distance_std', 'distance_min',
             'distance_max', 'distance_median', 'distance_iqr', 'session_range', 'stable_jump_cm']
@@ -89,9 +95,23 @@ print('\nHeld-out agreement with range-derived labels:', f'{accuracy_score(y_tes
 print(classification_report(y_test,predicted,labels=CLASSES,zero_division=0))
 print('This score measures agreement with the distance rules, not independently verified physical echo quality.')
 print('Missing test classes have untested performance. Separate recording runs are needed for stronger validation.')
-ConfusionMatrixDisplay.from_predictions(y_test,predicted,labels=CLASSES,cmap='YlGn',colorbar=False)
-plt.title('Recorded test sessions — rule-label agreement')
-plt.tight_layout(); plt.savefig('confusion_matrix.png',dpi=160); plt.show()
+fig, ax = plt.subplots(figsize=(8, 7))
+ConfusionMatrixDisplay.from_predictions(
+    y_test, predicted, labels=CLASSES,
+    display_labels=['Clean', 'Clutter', 'Weak signal'],
+    cmap='YlGn', colorbar=True, values_format='d', ax=ax,
+    text_kw={'fontsize': 18, 'fontweight': 'bold'})
+ax.set_xlabel('Predicted class', fontsize=13, labelpad=12)
+ax.set_ylabel('Actual range-derived class', fontsize=13, labelpad=12)
+ax.set_title('Confusion matrix — recorded test sessions', fontsize=15, pad=18)
+ax.tick_params(labelsize=12)
+counts = {label: y_test.count(label) for label in CLASSES}
+missing = [label.replace('_',' ') for label, count in counts.items() if count == 0]
+fig.text(.5, .02, 'Each cell is a session count; zeros are shown.\n' +
+         ('No test sessions for: ' + ', '.join(missing) if missing else 'All three classes are represented.'),
+         ha='center', fontsize=10)
+fig.tight_layout(rect=[0,.08,1,1])
+plt.savefig('confusion_matrix.png',dpi=200); plt.show()
 pd.Series(model.feature_importances_,index=FEATURES).sort_values().plot.barh(color='#64734c')
 plt.title('Random Forest feature importance'); plt.tight_layout()
 plt.savefig('feature_importance.png',dpi=160); plt.show()
