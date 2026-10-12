@@ -1,5 +1,7 @@
 # Ultrasonic Echo-Quality Classifier
 
+Project contributors: **Anupreeya and Arya Shahi**.
+
 An HC-SR04 / ESP32 experiment with a browser dashboard and a **10-tree Random Forest**. Each session contains 30 readings. The dashboard predicts Clean, Clutter, or Weak signal, displays session readings, and supports labeled live checks, confusion matrices, CSV imports, and browser-local retraining.
 
 ## Training targets
