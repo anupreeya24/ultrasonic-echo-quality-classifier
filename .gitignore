@@ -1,0 +1,11 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+*.zip
+*.tar.gz
+results/
+data/*backup*
+data/*partial*
