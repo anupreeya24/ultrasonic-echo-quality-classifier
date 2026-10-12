@@ -29,6 +29,8 @@ Arrange each condition before recording, then press RESET/EN when prompted. The 
 
 ## Website
 
+Live dashboard: https://anupreeya24.github.io/ultrasonic-echo-quality-classifier/
+
 The complete static website is in `docs/`. To run locally from the repository root:
 
 ```powershell
@@ -58,3 +60,4 @@ node build_rule_model.mjs
 node check-pattern-forest.mjs
 node check-live.mjs
 ```
+
