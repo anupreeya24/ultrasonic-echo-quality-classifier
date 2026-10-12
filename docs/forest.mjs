@@ -1,4 +1,4 @@
-import {FEATURE_NAMES,generatedPatterns} from './pattern-features.mjs';
+import {FEATURE_NAMES} from './pattern-features.mjs';
 export const CLASSES=['clean','clutter','weak_signal'];
 export const FEATURES=FEATURE_NAMES;
 function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -28,7 +28,7 @@ export function trainAndEvaluate(samples){
  if(!train.length||!test.length)throw Error('Add recorded sessions assigned to both training and test partitions.');
  // Select tree depth within the training half only. The external test half is untouched.
  const innerTrain=[],validation=[];for(const label of CLASSES){const group=train.filter(s=>s.label===label),n=Math.max(1,Math.floor(group.length*.25));innerTrain.push(...group.slice(0,-n));validation.push(...group.slice(-n));}
- const generated=generatedPatterns();let best=null;for(const depth of [4,7,10]){const candidate=trainForest([...innerTrain,...generated],{trees:10,maxDepth:depth});const metrics=evaluate(candidate,validation);if(!best||metrics.accuracy>best.score)best={depth,score:metrics.accuracy??0}}
+ const generated=[];let best=null;for(const depth of [4,7,10]){const candidate=trainForest([...innerTrain,...generated],{trees:10,maxDepth:depth});const metrics=evaluate(candidate,validation);if(!best||metrics.accuracy>best.score)best={depth,score:metrics.accuracy??0}}
  const model=trainForest([...train,...generated],{maxDepth:best.depth});const evaluation=evaluate(model,test);
  return {model,evaluation,trainingCount:train.length,testingCount:test.length,generatedCount:generated.length,depth:best.depth,trainIds:train.map(s=>s.id),testIds:test.map(s=>s.id)};
 }

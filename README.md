@@ -4,15 +4,7 @@ An HC-SR04 / ESP32 experiment with a browser dashboard and a **10-tree Random Fo
 
 ## Training targets
 
-The session range is the maximum minus minimum valid distance:
-
-| Range | Target |
-|---|---|
-| Below 1 cm | Clean |
-| 1 cm to below 10 cm | Clutter |
-| 10 cm or more | Weak signal |
-
-Sessions with no valid echoes have the Weak signal target. The ranges label training examples; live inference uses the Random Forest. Features include valid-return fraction, distance statistics, session range, a temporal jump feature, and the mean and maximum absolute differences between consecutive valid readings. Only adjacent pairs with two valid echoes are compared; missing echoes are not bridged. Session range keeps priority for training labels: gradual drift of 10 cm or more is Weak signal.
+The forest learns the recorded condition labels: Clean, Clutter, and Weak signal. Clutter can alternate between several object distances within one session, regardless of total distance range. Range, valid-return fraction, distance statistics, temporal jumps, and mean/maximum consecutive differences are input features. There is no threshold-based relabeling or live prediction override.
 
 ## Hardware and recording
 
@@ -51,7 +43,7 @@ The browser uses its own JavaScript forest implementation. Colab uses scikit-lea
 
 ## Validation and limitations
 
-The included dataset has 90 recorded sessions (2,700 readings). The browser baseline uses 45 recorded sessions plus 400 generated training examples; the other 45 recorded sessions form its test set. Generated examples are excluded from reported test scores. The score measures agreement with range-derived labels, not independent verification of physical echo quality. The recorded data contains no Clutter sessions under these range definitions, so recorded-data performance for Clutter is untested. Record varied conditions in independent runs for stronger validation. HC-SR04 measurements provide echo timing, not echo amplitude.
+The included dataset has 90 recorded sessions (2,700 readings), with 30 sessions per collected condition. The model uses 45 recorded sessions for training and 45 for testing, including 15 test sessions per class. No generated examples are used. Predictions can be wrong; the confusion matrix reports real held-out counts. Sessions from the same recording can be similar, so use separate live tests and varied recording runs for stronger validation. HC-SR04 measures echo timing, not echo amplitude.
 
 To rebuild the browser baseline and check inference with Node.js:
 

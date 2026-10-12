@@ -42,12 +42,6 @@ def features(distance, valid):
     return np.array([len(d)/len(distance), d.mean(), d.std(), d.min(), d.max(),
                      np.median(d), np.percentile(d,75)-np.percentile(d,25), np.ptp(d), jump, diff_mean, diff_max])
 
-def training_label(x):
-    if x[0] == 0: return 'weak_signal'
-    if x[7] < 1: return 'clean'
-    if x[7] < 10: return 'clutter'
-    return 'weak_signal'
-
 samples = []
 for name in ['clean.csv', 'clutter.csv', 'weak_signal.csv']:
     if name not in uploaded:
@@ -64,45 +58,31 @@ for name in ['clean.csv', 'clutter.csv', 'weak_signal.csv']:
             raise ValueError('Non-finite sensor values')
         if (rows.distance_cm < 0).any() or not rows.valid_echo.isin([0,1]).all():
             raise ValueError('Invalid sensor values')
+        if rows.label.nunique()!=1 or rows.label.iloc[0] not in CLASSES:
+            raise ValueError('Each session needs one valid condition label')
         x = features(rows.distance_cm, rows.valid_echo)
         samples.append(dict(id=str(sid), original_label=str(rows.label.iloc[0]),
-                            label=training_label(x), x=x,
+                            label=str(rows.label.iloc[0]), x=x,
                             partition='train' if order < len(groups)//2 else 'test'))
-
-# Same 400 training-pattern examples as the website. Never include these in test scores.
-generated = []
-for i in range(100):
-    level = 15+i*2.5
-    ranges = [[0,.1,.5,.9,.9999][i%5], [1,1.0001,2,5,9,9.9999][i%6]]
-    for span in ranges:
-        d = level+(np.arange(30)%2)*span
-        x = features(d,np.ones(30))
-        generated.append((x,training_label(x)))
-    d = level+(np.arange(30)>=15)*[10,10.0001,11,20,50,200][i%6]
-    x = features(d,np.ones(30)); generated.append((x,training_label(x)))
-    d = level+(np.arange(30)%2)*(11+i*2); v = np.ones(30)
-    if i%3==0: d[5]=0; v[5]=0
-    if i%10==0: d[:]=0; v[:]=0
-    x = features(d,v); generated.append((x,training_label(x)))
 
 train = [s for s in samples if s['partition']=='train']
 test = [s for s in samples if s['partition']=='test']
-X_train = np.array([s['x'] for s in train]+[x for x,y in generated])
-y_train = [s['label'] for s in train]+[y for x,y in generated]
+X_train = np.array([s['x'] for s in train])
+y_train = [s['label'] for s in train]
 X_test = np.array([s['x'] for s in test]); y_test = [s['label'] for s in test]
 model = RandomForestClassifier(n_estimators=10, max_depth=7, min_samples_leaf=2,
                                max_features='sqrt', class_weight='balanced', random_state=42)
 model.fit(X_train,y_train)
 predicted = model.predict(X_test)
 print('Trees:', len(model.estimators_))
-print('Recorded training sessions:', len(train), '| Generated training examples:', len(generated))
+print('Recorded training sessions:', len(train))
 print('Recorded test sessions:', len(test))
 print('\nRecorded session labels:')
 print(pd.crosstab(pd.Series([s['original_label'] for s in samples],name='Collected condition'),
-                  pd.Series([s['label'] for s in samples],name='Range-derived target')))
-print('\nHeld-out agreement with range-derived labels:', f'{accuracy_score(y_test,predicted):.1%}')
+                  pd.Series([s['label'] for s in samples],name='Training target')))
+print('\nHeld-out classification accuracy:', f'{accuracy_score(y_test,predicted):.1%}')
 print(classification_report(y_test,predicted,labels=CLASSES,zero_division=0))
-print('This score measures agreement with the distance rules, not independently verified physical echo quality.')
+print('This score evaluates collected condition labels. Separate live tests are needed to assess generalization.')
 print('Missing test classes have untested performance. Separate recording runs are needed for stronger validation.')
 fig, ax = plt.subplots(figsize=(8, 7))
 ConfusionMatrixDisplay.from_predictions(
@@ -111,7 +91,7 @@ ConfusionMatrixDisplay.from_predictions(
     cmap='YlGn', colorbar=True, values_format='d', ax=ax,
     text_kw={'fontsize': 18, 'fontweight': 'bold'})
 ax.set_xlabel('Predicted class', fontsize=13, labelpad=12)
-ax.set_ylabel('Actual range-derived class', fontsize=13, labelpad=12)
+ax.set_ylabel('Actual recorded condition', fontsize=13, labelpad=12)
 ax.set_title('Confusion matrix — recorded test sessions', fontsize=15, pad=18)
 ax.tick_params(labelsize=12)
 counts = {label: y_test.count(label) for label in CLASSES}
