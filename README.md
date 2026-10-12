@@ -12,7 +12,7 @@ The session range is the maximum minus minimum valid distance:
 | 1 cm to below 10 cm | Clutter |
 | 10 cm or more | Weak signal |
 
-Sessions with no valid echoes have the Weak signal target. The ranges label training examples; live inference uses the Random Forest. Features include valid-return fraction, distance statistics, session range, and a temporal jump feature.
+Sessions with no valid echoes have the Weak signal target. The ranges label training examples; live inference uses the Random Forest. Features include valid-return fraction, distance statistics, session range, a temporal jump feature, and the mean and maximum absolute differences between consecutive valid readings. Only adjacent pairs with two valid echoes are compared; missing echoes are not bridged. Session range keeps priority for training labels: gradual drift of 10 cm or more is Weak signal.
 
 ## Hardware and recording
 

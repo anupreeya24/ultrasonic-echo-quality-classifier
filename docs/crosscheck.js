@@ -1,6 +1,6 @@
 function predictionVersion(){return currentModelVersion;}
 const actualLabel=document.getElementById('actual-label'),saveCheck=document.getElementById('save-check'),checkStatus=document.getElementById('check-status'),historyBody=document.getElementById('check-history'),liveAccuracy=document.getElementById('live-accuracy'),featureBody=document.getElementById('feature-values'),rawBody=document.getElementById('raw-values'),sessionPlot=document.getElementById('session-plot');
-let lastCompleted=null,checkedSessions=[],completionId=0,trainingRanges=null,currentModelVersion='RF range v5 · 10 trees';
+let lastCompleted=null,checkedSessions=[],completionId=0,trainingRanges=null,currentModelVersion='RF range v6 · 10 trees';
 fetch('training-ranges.json').then(r=>{if(!r.ok)throw Error();return r.json()}).then(r=>trainingRanges=r).catch(()=>{});
 function cell(row,text){const td=document.createElement('td');td.textContent=text;row.append(td);return td}
 function recordCompleted(rows,features,probabilities,predicted,session){

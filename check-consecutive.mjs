@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {patternFeatures,trainingLabel} from './docs/pattern-features.mjs';
+import {predict} from './docs/forest.mjs';
+const rows=d=>d.map(distance=>({distance,valid:1}));
+const x=patternFeatures(rows([30,30.2,30.5]));assert.ok(Math.abs(x[9]-.25)<1e-10);assert.ok(Math.abs(x[10]-.3)<1e-10);
+const gap=patternFeatures([{distance:30,valid:1},{distance:0,valid:0},{distance:45,valid:1}]);assert.equal(gap[9],0);assert.equal(gap[10],0);
+const drift=patternFeatures(rows(Array.from({length:30},(_,i)=>30+15*i/29)));assert.equal(trainingLabel(drift),'weak_signal');assert.ok(drift[10]<1);
+const model=JSON.parse(fs.readFileSync('docs/model.json'));assert.equal(model.trees.length,10);assert.equal(model.features.length,11);
+const probs=predict(model,drift);assert.equal(model.classes[probs.indexOf(Math.max(...probs))],'weak_signal');
+console.log('Consecutive differences, missing pairs, 15 cm gradual drift, and 10-tree inference passed.');

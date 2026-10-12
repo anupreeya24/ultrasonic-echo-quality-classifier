@@ -17,7 +17,8 @@ for filename, content in raw_uploaded.items():
     uploaded[canonical] = content
 CLASSES = ['clean', 'clutter', 'weak_signal']
 FEATURES = ['valid_fraction', 'distance_mean', 'distance_std', 'distance_min',
-            'distance_max', 'distance_median', 'distance_iqr', 'session_range', 'stable_jump_cm']
+            'distance_max', 'distance_median', 'distance_iqr', 'session_range', 'stable_jump_cm',
+            'consecutive_diff_mean', 'consecutive_diff_max']
 
 def features(distance, valid):
     distance, valid = np.asarray(distance, dtype=float), np.asarray(valid, dtype=int)
@@ -28,10 +29,18 @@ def features(distance, valid):
             plateau = distance[i-10:i]
             if np.ptp(plateau) <= 1 + 1e-8:
                 jump = max(jump, abs(distance[i] - plateau.mean()))
+    pair_valid = (valid[:-1] == 1) & (valid[1:] == 1)
+    diffs = np.abs(np.diff(distance))[pair_valid]
+    diff_mean = diffs.mean() if len(diffs) else 0.
+    diff_max = diffs.max() if len(diffs) else 0.
+    pair_valid = (valid[:-1] == 1) & (valid[1:] == 1)
+    diffs = np.abs(np.diff(distance))[pair_valid]
+    diff_mean = diffs.mean() if len(diffs) else 0.
+    diff_max = diffs.max() if len(diffs) else 0.
     if len(d) == 0:
-        return np.zeros(9)
+        return np.zeros(len(FEATURES))
     return np.array([len(d)/len(distance), d.mean(), d.std(), d.min(), d.max(),
-                     np.median(d), np.percentile(d,75)-np.percentile(d,25), np.ptp(d), jump])
+                     np.median(d), np.percentile(d,75)-np.percentile(d,25), np.ptp(d), jump, diff_mean, diff_max])
 
 def training_label(x):
     if x[0] == 0: return 'weak_signal'
